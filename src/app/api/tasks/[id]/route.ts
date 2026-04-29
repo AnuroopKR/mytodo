@@ -15,16 +15,52 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json();
     await connectToDatabase();
 
-    const task = await Task.findOneAndUpdate(
-      { _id: id, userId: session.user.id },
-      { $set: body },
-      { new: true }
-    );
-
+    let task = await Task.findOne({ _id: id, userId: session.user.id });
     if (!task) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
     }
 
+    if (body.startTime === null) {
+      task.startTime = undefined;
+      delete body.startTime;
+    }
+    
+    task.set(body);
+
+    // Recurring task spawning logic
+    if (
+      task.status === "done" &&
+      task.recurring?.frequency &&
+      task.recurring.frequency !== "none" &&
+      !task.recurring.nextInstanceGenerated
+    ) {
+      const nextDueDate = new Date(task.dueDate || new Date());
+      if (task.recurring.frequency === "daily") {
+        nextDueDate.setDate(nextDueDate.getDate() + 1);
+      } else if (task.recurring.frequency === "weekly") {
+        nextDueDate.setDate(nextDueDate.getDate() + 7);
+      } else if (task.recurring.frequency === "monthly") {
+        nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+      }
+
+      await Task.create({
+        title: task.title,
+        description: task.description,
+        status: "todo",
+        priority: task.priority,
+        dueDate: nextDueDate,
+        projectId: task.projectId,
+        userId: task.userId,
+        subtasks: task.subtasks.map((st: any) => ({ title: st.title, isCompleted: false })),
+        tags: task.tags,
+        notes: task.notes,
+        recurring: { frequency: task.recurring.frequency, nextInstanceGenerated: false },
+      });
+
+      task.recurring.nextInstanceGenerated = true;
+    }
+
+    await task.save();
     return NextResponse.json(task);
   } catch (error) {
     return NextResponse.json({ message: "Internal Error" }, { status: 500 });

@@ -1,50 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckSquare, Clock, LayoutDashboard, ListTodo, FolderKanban } from "lucide-react";
+import { CheckSquare, Clock, AlertCircle, Plus, Calendar as CalendarIcon, CheckCircle2, Circle } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import { Input } from "@/components/ui/input";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from "recharts";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [stats, setStats] = useState({ total: 0, todo: 0, inProgress: 0, done: 0, projects: 0 });
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [newTaskTitle, setNewTaskTitle] = useState("");
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [tasksRes, projectsRes] = await Promise.all([
-          fetch("/api/tasks"),
-          fetch("/api/projects")
-        ]);
-        const tasks = await tasksRes.json();
-        const projects = await projectsRes.json();
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ["analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/analytics");
+      return res.json();
+    }
+  });
 
-        const todo = tasks.filter((t: any) => t.status === "todo").length;
-        const inProgress = tasks.filter((t: any) => t.status === "in-progress").length;
-        const done = tasks.filter((t: any) => t.status === "done").length;
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ["dashboard-tasks"],
+    queryFn: async () => {
+      const res = await fetch("/api/tasks?limit=100");
+      return res.json();
+    }
+  });
 
-        setStats({
-          total: tasks.length,
-          todo,
-          inProgress,
-          done,
-          projects: projects.length,
-        });
-      } catch (err) {
-        console.error("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { data: projects } = useQuery({
+    queryKey: ["projects"],
+    queryFn: async () => {
+      const res = await fetch("/api/projects");
+      return res.json();
+    }
+  });
 
-    fetchDashboardData();
-  }, []);
+  const createTaskMutation = useMutation({
+    mutationFn: async (title: string) => {
+      // Find a default project or the first project
+      const projectId = projects?.[0]?._id;
+      if (!projectId) throw new Error("No project available");
+      
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, projectId, priority: "medium", status: "todo", dueDate: new Date().toISOString() })
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+      setNewTaskTitle("");
+    }
+  });
 
-  if (loading) {
+  const toggleTaskStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string, status: string }) => {
+      const res = await fetch(`/api/tasks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    }
+  });
+
+  if (tasksLoading || analyticsLoading) {
     return <div className="animate-pulse space-y-6">
       <div className="h-8 bg-zinc-200 rounded w-1/4"></div>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -53,88 +84,161 @@ export default function DashboardPage() {
     </div>;
   }
 
-  const chartData = [
-    { name: "To Do", value: stats.todo, color: "#94a3b8" },
-    { name: "In Progress", value: stats.inProgress, color: "#3b82f6" },
-    { name: "Done", value: stats.done, color: "#22c55e" },
-  ];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+
+  const overdueTasks = safeTasks.filter((t: any) => t.dueDate && new Date(t.dueDate) < today && t.status !== "done");
+  const todayTasks = safeTasks.filter((t: any) => t.dueDate && new Date(t.dueDate) >= today && new Date(t.dueDate) < tomorrow);
+  const upcomingTasks = safeTasks.filter((t: any) => t.dueDate && new Date(t.dueDate) >= tomorrow && new Date(t.dueDate) <= nextWeek && t.status !== "done");
+
+  const todayCompleted = todayTasks.filter((t: any) => t.status === "done").length;
+  const todayProgress = todayTasks.length > 0 ? Math.round((todayCompleted / todayTasks.length) * 100) : 0;
+
+  const handleQuickAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    createTaskMutation.mutate(newTaskTitle);
+  };
+
+  const COLORS = ['#94a3b8', '#3b82f6', '#22c55e'];
+  const pieData = analytics?.statusBreakdown ? [
+    { name: 'Pending', value: analytics.statusBreakdown.pending },
+    { name: 'Completed', value: analytics.statusBreakdown.completed }
+  ] : [];
 
   return (
-    <div className="space-y-8 animate-in fade-in zoom-in duration-500">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Dashboard</h1>
-        <p className="text-zinc-500 mt-2">Welcome back, {session?.user?.name}. Here's an overview of your tasks.</p>
+    <div className="space-y-8 animate-in fade-in zoom-in duration-500 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Dashboard</h1>
+          <p className="text-zinc-500 mt-2">Welcome back, {session?.user?.name}. Here's your productivity overview.</p>
+        </div>
+        <form onSubmit={handleQuickAdd} className="flex items-center gap-2 max-w-sm w-full">
+          <Input 
+            placeholder="Quick add today's task..." 
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            disabled={createTaskMutation.isPending || !projects?.length}
+            className="flex-1"
+          />
+          <Button type="submit" size="icon" disabled={createTaskMutation.isPending || !projects?.length}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </form>
       </div>
 
+      {projects?.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg">
+          Please create a project first before adding tasks! <Link href="/projects" className="underline font-semibold">Go to Projects</Link>
+        </div>
+      )}
+
+      {/* Stats Row */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-zinc-400 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-600">Total Projects</CardTitle>
-            <LayoutDashboard className="h-4 w-4 text-zinc-400" />
+            <CardTitle className="text-sm font-medium text-zinc-600">Today's Progress</CardTitle>
+            <CheckSquare className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-zinc-900">{stats.projects}</div>
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-bold text-zinc-900">{todayProgress}%</div>
+              <div className="w-full h-2 bg-zinc-100 rounded-full overflow-hidden">
+                <div className="h-full bg-primary transition-all duration-500" style={{ width: `${todayProgress}%` }} />
+              </div>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">{todayCompleted} of {todayTasks.length} tasks completed today</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-blue-400 shadow-sm hover:shadow-md transition-shadow">
+        
+        <Card className="shadow-sm border-red-200 bg-red-50/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-600">Total Tasks</CardTitle>
-            <ListTodo className="h-4 w-4 text-blue-400" />
+            <CardTitle className="text-sm font-medium text-red-700">Overdue Tasks</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-zinc-900">{stats.total}</div>
+            <div className="text-3xl font-bold text-red-600">{overdueTasks.length}</div>
+            <p className="text-xs text-red-500/80 mt-2">Requires immediate attention</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-orange-400 shadow-sm hover:shadow-md transition-shadow">
+        
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-600">In Progress</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-600">Upcoming (7 days)</CardTitle>
+            <CalendarIcon className="h-4 w-4 text-blue-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-zinc-900">{upcomingTasks.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-600">Total Pending</CardTitle>
             <Clock className="h-4 w-4 text-orange-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-zinc-900">{stats.inProgress}</div>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-green-400 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-600">Completed</CardTitle>
-            <CheckSquare className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-zinc-900">{stats.done}</div>
+            <div className="text-3xl font-bold text-zinc-900">{analytics?.statusBreakdown?.pending || 0}</div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card className="shadow-sm border-zinc-200 col-span-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Today's Tasks List */}
+        <Card className="lg:col-span-1 shadow-sm border-zinc-200">
           <CardHeader>
-            <CardTitle>Tasks by Status</CardTitle>
+            <CardTitle>Today's Focus</CardTitle>
           </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} allowDecimals={false} tickLine={false} axisLine={false} />
-                <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="space-y-3">
+            {todayTasks.length === 0 ? (
+              <p className="text-sm text-zinc-500 text-center py-4">No tasks scheduled for today.</p>
+            ) : (
+              todayTasks.map((task: any) => (
+                <div key={task._id} className="flex items-center gap-3 p-2 hover:bg-zinc-50 rounded-lg transition-colors group">
+                  <button onClick={() => toggleTaskStatus.mutate({ id: task._id, status: task.status === "done" ? "todo" : "done" })}>
+                    {task.status === "done" ? (
+                      <CheckCircle2 className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-zinc-300 group-hover:text-zinc-400" />
+                    )}
+                  </button>
+                  <span className={cn("text-sm font-medium flex-1 truncate", task.status === "done" && "line-through text-zinc-400")}>
+                    {task.title}
+                  </span>
+                  <Link href={`/focus/${task._id}`}>
+                    <Button variant="ghost" size="sm" className="h-7 text-[10px] uppercase">Focus</Button>
+                  </Link>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-zinc-200 col-span-1 flex flex-col justify-center items-center text-center p-8 bg-gradient-to-br from-primary/5 to-primary/10">
-          <div className="bg-white p-4 rounded-full shadow-sm mb-4">
-            <FolderKanban className="h-8 w-8 text-primary" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Ready to work?</h3>
-          <p className="text-zinc-500 mb-6 max-w-sm">Jump right back into your projects and keep moving your tasks to Done.</p>
-          <Link href="/projects">
-            <Button size="lg" className="shadow-md">View My Projects</Button>
-          </Link>
+        {/* Analytics Chart */}
+        <Card className="lg:col-span-2 shadow-sm border-zinc-200">
+          <CardHeader>
+            <CardTitle>Weekly Activity (Completed Tasks)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {analytics?.weeklyActivity ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.weeklyActivity} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
+                  <XAxis dataKey="date" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { weekday: 'short' })} />
+                  <YAxis stroke="#888888" fontSize={12} allowDecimals={false} tickLine={false} axisLine={false} />
+                  <Tooltip cursor={{fill: 'transparent'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>

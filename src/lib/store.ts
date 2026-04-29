@@ -8,6 +8,14 @@ interface Task {
   priority: "low" | "medium" | "high";
   dueDate?: string;
   projectId: string;
+  subtasks?: Array<{ title: string; isCompleted: boolean }>;
+  tags?: string[];
+  notes?: string;
+  recurring?: {
+    frequency: "none" | "daily" | "weekly" | "monthly";
+    nextInstanceGenerated: boolean;
+  };
+  startTime?: number;
 }
 
 interface KanbanState {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import mongoose from "mongoose";
 import connectToDatabase from "@/lib/db";
 import Project from "@/models/Project";
 import { z } from "zod";
@@ -18,10 +19,62 @@ export async function GET(req: Request) {
     }
 
     await connectToDatabase();
-    const projects = await Project.find({ userId: session.user.id }).sort({ createdAt: -1 });
+    
+    const projects = await Project.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(session.user.id) } },
+      {
+        $lookup: {
+          from: "tasks",
+          localField: "_id",
+          foreignField: "projectId",
+          as: "tasks",
+        },
+      },
+      {
+        $addFields: {
+          totalTasks: { $size: "$tasks" },
+          completedTasks: {
+            $size: {
+              $filter: {
+                input: "$tasks",
+                as: "task",
+                cond: { $eq: ["$$task.status", "done"] },
+              },
+            },
+          },
+          dueSoonTasks: {
+            $size: {
+              $filter: {
+                input: "$tasks",
+                as: "task",
+                cond: {
+                  $and: [
+                    { $ne: ["$$task.status", "done"] },
+                    { $type: "$$task.dueDate" },
+                    {
+                      $lte: [
+                        "$$task.dueDate",
+                        new Date(new Date().getTime() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
+                      ],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          tasks: 0,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
 
     return NextResponse.json(projects);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: "Internal Error" }, { status: 500 });
   }
 }

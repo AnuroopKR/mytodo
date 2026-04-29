@@ -6,7 +6,7 @@ import { useKanbanStore } from "@/lib/store";
 import { Separator } from "@/components/ui/separator";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TaskDetailModal } from "./task-detail-modal";
 
 const columns = [
@@ -15,9 +15,16 @@ const columns = [
   { id: "done", title: "Done", color: "bg-green-50" },
 ];
 
-export function KanbanBoard() {
+export function KanbanBoard({ initialTaskId }: { initialTaskId?: string | null }) {
   const { tasks, updateTaskStatus } = useKanbanStore();
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(initialTaskId || null);
+
+  // If initialTaskId changes, update selectedTaskId
+  useEffect(() => {
+    if (initialTaskId) {
+      setSelectedTaskId(initialTaskId);
+    }
+  }, [initialTaskId]);
 
   const onDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;

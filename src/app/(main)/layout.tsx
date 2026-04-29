@@ -4,9 +4,10 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Loader2, Menu } from "lucide-react";
+import { LayoutDashboard, FolderKanban, CheckSquare, LogOut, Loader2, Menu, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { NotificationsPopover } from "@/components/layout/notifications-popover";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -29,15 +30,19 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Projects", href: "/projects", icon: FolderKanban },
     { name: "All Tasks", href: "/tasks", icon: CheckSquare },
+    { name: "Daily Planner", href: "/calendar", icon: CalendarIcon },
   ];
 
   return (
     <div className="min-h-screen bg-zinc-50/50 flex flex-col lg:flex-row">
       <div className="lg:hidden flex items-center justify-between bg-white border-b border-zinc-200 p-4 sticky top-0 z-40">
         <span className="text-xl font-bold text-primary">TaskMaster</span>
-        <Button variant="outline" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-          <Menu className="h-5 w-5" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <NotificationsPopover />
+          <Button variant="outline" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       <div
@@ -46,8 +51,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="hidden lg:flex h-16 shrink-0 items-center px-6 border-b border-zinc-100">
+        <div className="hidden lg:flex h-16 shrink-0 items-center justify-between px-6 border-b border-zinc-100">
           <span className="text-xl font-bold tracking-tight text-primary">TaskMaster</span>
+          <NotificationsPopover align="left" />
         </div>
         
         <nav className="flex-1 space-y-1 px-3 py-4">
@@ -80,13 +86,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         
         <div className="p-4 border-t border-zinc-100">
           <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-sm font-medium text-zinc-900 truncate w-32">{session?.user?.name}</span>
-              <span className="text-xs text-zinc-500 truncate w-32">{session?.user?.email}</span>
+            <div className="flex flex-col flex-1 min-w-0 pr-2">
+              <span className="text-sm font-medium text-zinc-900 truncate">{session?.user?.name}</span>
+              <span className="text-xs text-zinc-500 truncate">{session?.user?.email}</span>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => signOut()} title="Logout">
-              <LogOut className="h-5 w-5 text-zinc-500 hover:text-destructive" />
-            </Button>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="icon" onClick={() => signOut()} title="Logout">
+                <LogOut className="h-5 w-5 text-zinc-500 hover:text-destructive" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

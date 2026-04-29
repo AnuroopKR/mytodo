@@ -13,8 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 
-export default function ProjectDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
+export default function ProjectDetailPage({ 
+  params: paramsPromise,
+  searchParams: searchParamsPromise
+}: { 
+  params: Promise<{ id: string }>,
+  searchParams: Promise<{ taskId?: string }>
+}) {
   const params = use(paramsPromise);
+  const searchParams = use(searchParamsPromise);
   const router = useRouter();
   const { setTasks, addTask } = useKanbanStore();
   const [project, setProject] = useState<any>(null);
@@ -46,7 +53,7 @@ export default function ProjectDetailPage({ params: paramsPromise }: { params: P
         const tasksData = await tasksRes.json();
 
         setProject(projectData);
-        setTasks(tasksData);
+        setTasks(Array.isArray(tasksData) ? tasksData : []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -136,37 +143,40 @@ export default function ProjectDetailPage({ params: paramsPromise }: { params: P
           </Button>
           
           <Dialog open={isTaskModalOpen} onOpenChange={setIsTaskModalOpen}>
-            <DialogTrigger render={<Button size="sm" className="shadow-sm" />}>
+            <DialogTrigger render={<Button size="sm" className="shadow-sm font-semibold rounded-lg" />}>
               <Plus className="mr-2 h-4 w-4" />
               Add Task
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[450px] overflow-hidden p-0 rounded-2xl">
               <form onSubmit={handleCreateTask}>
-                <DialogHeader>
-                  <DialogTitle>Create Task</DialogTitle>
-                  <DialogDescription>
-                    Add a new task to your board.
+                <div className="bg-zinc-50/50 p-6 pb-4 border-b border-zinc-100">
+                  <DialogTitle className="text-xl font-bold text-zinc-900">Create New Task</DialogTitle>
+                  <DialogDescription className="text-sm text-zinc-500 mt-1">
+                    What do you need to get done?
                   </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="task-title">Title</Label>
+                </div>
+                
+                <div className="p-6 space-y-5">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="task-title" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Title</Label>
                     <Input 
                       id="task-title" 
                       value={newTask.title} 
                       onChange={(e) => setNewTask({...newTask, title: e.target.value})}
                       required 
-                      placeholder="Fix sidebar responsiveness"
+                      placeholder="e.g. Redesign landing page"
+                      className="h-10 text-sm shadow-sm border-zinc-200 focus-visible:ring-primary/20"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="priority">Priority</Label>
+                  
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="priority" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Priority</Label>
                       <Select 
                         value={newTask.priority} 
                         onValueChange={(v: any) => setNewTask({...newTask, priority: v})}
                       >
-                        <SelectTrigger id="priority">
+                        <SelectTrigger id="priority" className="h-10 text-sm shadow-sm border-zinc-200 capitalize bg-white">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                         <SelectContent>
@@ -176,13 +186,13 @@ export default function ProjectDetailPage({ params: paramsPromise }: { params: P
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Initial Status</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="status" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Status</Label>
                       <Select 
                         value={newTask.status} 
                         onValueChange={(v: any) => setNewTask({...newTask, status: v})}
                       >
-                        <SelectTrigger id="status">
+                        <SelectTrigger id="status" className="h-10 text-sm shadow-sm border-zinc-200 bg-white">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -193,23 +203,26 @@ export default function ProjectDetailPage({ params: paramsPromise }: { params: P
                       </Select>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="task-desc">Description</Label>
+                  
+                  <div className="space-y-1.5">
+                    <Label htmlFor="task-desc" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Description <span className="text-zinc-400 font-normal lowercase">(optional)</span></Label>
                     <Textarea 
                       id="task-desc" 
                       value={newTask.description}
                       onChange={(e) => setNewTask({...newTask, description: e.target.value})}
                       rows={3}
-                      placeholder="Briefly describe the task..."
+                      placeholder="Add any extra details here..."
+                      className="resize-none shadow-sm border-zinc-200 focus-visible:ring-primary/20 text-sm"
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsTaskModalOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={creatingTask}>
-                    {creatingTask ? "Adding..." : "Add Task"}
+                
+                <div className="p-6 pt-0 flex justify-end gap-2 bg-white">
+                  <Button type="button" variant="ghost" onClick={() => setIsTaskModalOpen(false)} className="text-zinc-500 hover:text-zinc-900">Cancel</Button>
+                  <Button type="submit" disabled={creatingTask} className="shadow-sm font-semibold px-6">
+                    {creatingTask ? "Adding..." : "Create Task"}
                   </Button>
-                </DialogFooter>
+                </div>
               </form>
             </DialogContent>
           </Dialog>
@@ -217,7 +230,7 @@ export default function ProjectDetailPage({ params: paramsPromise }: { params: P
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <KanbanBoard />
+        <KanbanBoard initialTaskId={searchParams.taskId} />
       </div>
     </div>
   );

@@ -12,6 +12,17 @@ const taskSchema = z.object({
   priority: z.enum(["low", "medium", "high"]).default("medium"),
   dueDate: z.string().optional().nullable(),
   projectId: z.string().min(1, "Project ID is required"),
+  subtasks: z.array(z.object({
+    title: z.string(),
+    isCompleted: z.boolean().default(false)
+  })).optional().default([]),
+  tags: z.array(z.string()).optional().default([]),
+  notes: z.string().optional(),
+  recurring: z.object({
+    frequency: z.enum(["none", "daily", "weekly", "monthly"]).default("none"),
+    nextInstanceGenerated: z.boolean().default(false)
+  }).optional().default({ frequency: "none", nextInstanceGenerated: false }),
+  startTime: z.number().min(0).max(23).optional().nullable()
 });
 
 export async function GET(req: Request) {
@@ -23,17 +34,55 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");
+    const search = searchParams.get("search");
+    const status = searchParams.get("status");
+    const priority = searchParams.get("priority");
+    const tags = searchParams.get("tags");
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
+    
+    // Pagination
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const skip = (page - 1) * limit;
 
     await connectToDatabase();
     const query: any = { userId: session.user.id };
-    if (projectId) {
-      query.projectId = projectId;
+    
+    if (projectId) query.projectId = projectId;
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+    if (tags) {
+      query.tags = { $in: tags.split(",") };
+    }
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } }
+      ];
+    }
+    if (startDate || endDate) {
+      query.dueDate = {};
+      if (startDate) query.dueDate.$gte = new Date(startDate);
+      if (endDate) query.dueDate.$lte = new Date(endDate);
     }
 
-    const tasks = await Task.find(query).sort({ priority: -1, createdAt: -1 });
+    const tasks = await Task.find(query)
+      .sort({ dueDate: 1, priority: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+      
+    const total = await Task.countDocuments(query);
 
-    return NextResponse.json(tasks);
+    return NextResponse.json(tasks, {
+      headers: {
+        'X-Total-Count': total.toString(),
+        'X-Total-Pages': Math.ceil(total / limit).toString(),
+        'X-Current-Page': page.toString()
+      }
+    });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: "Internal Error" }, { status: 500 });
   }
 }

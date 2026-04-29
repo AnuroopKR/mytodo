@@ -12,6 +12,7 @@ import { Calendar, Trash2, MessageSquare, Send } from "lucide-react";
 import { useKanbanStore } from "@/lib/store";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface TaskDetailModalProps {
   taskId: string | null;
@@ -31,7 +32,12 @@ export function TaskDetailModal({ taskId, isOpen, onClose }: TaskDetailModalProp
 
   useEffect(() => {
     if (task) {
-      setEditedTask({ ...task });
+      setEditedTask({ 
+        ...task,
+        subtasks: task.subtasks || [],
+        notes: task.notes || "",
+        recurring: task.recurring || { frequency: "none", nextInstanceGenerated: false }
+      });
       fetchComments();
     }
   }, [task]);
@@ -108,85 +114,216 @@ export function TaskDetailModal({ taskId, isOpen, onClose }: TaskDetailModalProp
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between mr-8">
-            <Badge variant="secondary" className="capitalize">
-              {task.status.replace("-", " ")}
-            </Badge>
-            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleDelete}>
+          <div className="flex items-center justify-between mb-4 mt-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="capitalize px-2.5 py-0.5 bg-zinc-100 text-zinc-600 font-semibold border-0">
+                {task.status.replace("-", " ")}
+              </Badge>
+              {task.projectId && (
+                <Badge variant="outline" className="px-2.5 py-0.5 text-zinc-400 font-medium border-zinc-200">
+                  Project Task
+                </Badge>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 rounded-full" onClick={handleDelete} title="Delete Task">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
           <DialogTitle className="text-xl">
              <Input 
                value={editedTask.title} 
-               className="text-xl font-bold border-none px-0 focus-visible:ring-0 shadow-none h-auto" 
+               className="text-2xl font-bold border-transparent px-0 hover:border-zinc-200 focus-visible:ring-0 focus-visible:border-zinc-300 shadow-none h-auto py-1 rounded-none bg-transparent" 
                onChange={(e) => setEditedTask({...editedTask, title: e.target.value})}
+               placeholder="Task Title"
              />
           </DialogTitle>
-          <DialogDescription>
-            {task.projectId ? "Task in project" : "Personal task"}
+          <DialogDescription className="sr-only">
+            Edit task details
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Status</Label>
+        <div className="grid gap-7 py-2 px-1">
+          {/* Metadata Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-zinc-50/50 rounded-xl border border-zinc-100">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Status
+              </Label>
               <Select 
                 value={editedTask.status} 
                 onValueChange={(v: any) => setEditedTask({...editedTask, status: v})}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 text-xs border-zinc-200 bg-white shadow-sm font-medium">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="done">Done</SelectItem>
+                  <SelectItem value="todo" className="text-xs">To Do</SelectItem>
+                  <SelectItem value="in-progress" className="text-xs">In Progress</SelectItem>
+                  <SelectItem value="done" className="text-xs">Done</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Priority</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-orange-400" /> Priority
+              </Label>
               <Select 
                 value={editedTask.priority} 
                 onValueChange={(v: any) => setEditedTask({...editedTask, priority: v})}
               >
-                <SelectTrigger className="h-9">
+                <SelectTrigger className="h-8 text-xs border-zinc-200 bg-white shadow-sm font-medium capitalize">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="low" className="text-xs">Low</SelectItem>
+                  <SelectItem value="medium" className="text-xs">Medium</SelectItem>
+                  <SelectItem value="high" className="text-xs">High</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Due Date</Label>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <Calendar className="w-3 h-3 text-zinc-400" /> Due Date
+              </Label>
               <div className="relative">
                 <Input 
                   type="date"
                   value={editedTask.dueDate ? editedTask.dueDate.split('T')[0] : ""} 
                   onChange={(e) => setEditedTask({...editedTask, dueDate: e.target.value})}
-                  className="h-9 pl-9"
+                  className="h-8 text-xs border-zinc-200 bg-white shadow-sm font-medium px-2"
                 />
-                <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-400" /> Recurring
+              </Label>
+              <Select 
+                value={editedTask.recurring?.frequency || "none"} 
+                onValueChange={(v: any) => setEditedTask({...editedTask, recurring: { ...editedTask.recurring, frequency: v }})}
+              >
+                <SelectTrigger className="h-8 text-xs border-zinc-200 bg-white shadow-sm font-medium capitalize">
+                  <SelectValue placeholder="Select frequency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className="text-xs">None</SelectItem>
+                  <SelectItem value="daily" className="text-xs">Daily</SelectItem>
+                  <SelectItem value="weekly" className="text-xs">Weekly</SelectItem>
+                  <SelectItem value="monthly" className="text-xs">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Description</Label>
+            <Label className="text-[11px] text-zinc-700 font-semibold flex items-center gap-2">
+              Description
+            </Label>
             <Textarea 
               value={editedTask.description || ""} 
               onChange={(e) => setEditedTask({...editedTask, description: e.target.value})}
               placeholder="Add more details about this task..."
-              className="resize-none min-h-[100px] border-zinc-200 focus-visible:ring-primary/20"
+              className="resize-none min-h-[80px] border-zinc-200 focus-visible:ring-primary/20 text-sm placeholder:text-zinc-400 shadow-sm"
             />
           </div>
 
-          <Separator className="my-2" />
+          <div className="space-y-2">
+            <Label className="text-[11px] text-zinc-700 font-semibold flex items-center gap-2">
+              Tags
+            </Label>
+            <Input 
+              value={editedTask.tags?.join(", ") || ""} 
+              onChange={(e) => {
+                const tagsArray = e.target.value.split(",").map((t: string) => t.trim()).filter(Boolean);
+                setEditedTask({...editedTask, tags: tagsArray});
+              }}
+              placeholder="e.g. frontend, urgent, bug (comma separated)"
+              className="h-9 text-sm border-zinc-200 focus-visible:ring-primary/20 shadow-sm"
+            />
+            {editedTask.tags && editedTask.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {editedTask.tags.map((tag: string, i: number) => (
+                  <Badge key={i} variant="secondary" className="text-[10px] bg-zinc-100 text-zinc-600 font-medium px-2 py-0.5 border-0">
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] text-zinc-700 font-semibold flex items-center gap-2">
+                Subtasks
+              </Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setEditedTask({...editedTask, subtasks: [...(editedTask.subtasks || []), { title: "", isCompleted: false }]})}
+                className="h-6 px-2 text-[10px] text-primary hover:bg-primary/10 hover:text-primary font-semibold"
+              >
+                + Add Subtask
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {editedTask.subtasks?.length === 0 ? (
+                <div className="text-xs text-zinc-400 italic bg-zinc-50 border border-zinc-100 rounded-lg p-3 text-center">No subtasks added yet.</div>
+              ) : (
+                editedTask.subtasks?.map((st: any, i: number) => (
+                  <div key={i} className="flex gap-3 items-center group bg-white border border-zinc-200 rounded-lg p-1.5 pl-3 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/30 hover:border-zinc-300">
+                    <input 
+                      type="checkbox" 
+                      checked={st.isCompleted} 
+                      onChange={(e) => {
+                        const newSubtasks = [...editedTask.subtasks];
+                        newSubtasks[i].isCompleted = e.target.checked;
+                        setEditedTask({...editedTask, subtasks: newSubtasks});
+                      }}
+                      className="w-4 h-4 text-primary rounded-sm border-zinc-300 focus:ring-primary cursor-pointer transition-all"
+                    />
+                    <Input 
+                      value={st.title} 
+                      onChange={(e) => {
+                        const newSubtasks = [...editedTask.subtasks];
+                        newSubtasks[i].title = e.target.value;
+                        setEditedTask({...editedTask, subtasks: newSubtasks});
+                      }}
+                      placeholder="What needs to be done?"
+                      className={cn(
+                        "h-7 text-sm border-transparent px-1 focus-visible:ring-0 shadow-none bg-transparent flex-1 transition-all",
+                        st.isCompleted && "line-through text-zinc-400"
+                      )}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7 text-zinc-300 hover:text-red-500 hover:bg-red-50 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => {
+                        const newSubtasks = editedTask.subtasks.filter((_: any, idx: number) => idx !== i);
+                        setEditedTask({...editedTask, subtasks: newSubtasks});
+                      }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-[11px] text-zinc-700 font-semibold flex items-center gap-2">
+              Personal Notes
+            </Label>
+            <Textarea 
+              value={editedTask.notes || ""} 
+              onChange={(e) => setEditedTask({...editedTask, notes: e.target.value})}
+              placeholder="Add personal notes, links, or references here..."
+              className="resize-none min-h-[100px] border-zinc-200 focus-visible:ring-primary/20 bg-amber-50/30 text-sm shadow-sm"
+            />
+          </div>
+
+          <Separator className="my-1" />
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
