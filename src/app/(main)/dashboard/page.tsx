@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,13 +8,18 @@ import { CheckSquare, Clock, AlertCircle, Plus, Calendar as CalendarIcon, CheckC
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, PieChart, Pie } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const { data: analytics, isLoading: analyticsLoading } = useQuery({
     queryKey: ["analytics"],
@@ -42,7 +47,6 @@ export default function DashboardPage() {
 
   const createTaskMutation = useMutation({
     mutationFn: async (title: string) => {
-      // Find a default project or the first project
       const projectId = projects?.[0]?._id;
       if (!projectId) throw new Error("No project available");
       
@@ -76,12 +80,16 @@ export default function DashboardPage() {
   });
 
   if (tasksLoading || analyticsLoading) {
-    return <div className="animate-pulse space-y-6">
-      <div className="h-8 bg-zinc-200 rounded w-1/4"></div>
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-zinc-200 rounded-xl"></div>)}
+    return (
+      <div className="animate-pulse space-y-6">
+        <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded w-1/4"></div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-32 bg-zinc-200 dark:bg-zinc-800 rounded-xl"></div>
+          ))}
+        </div>
       </div>
-    </div>;
+    );
   }
 
   const today = new Date();
@@ -105,12 +113,6 @@ export default function DashboardPage() {
     if (!newTaskTitle.trim()) return;
     createTaskMutation.mutate(newTaskTitle);
   };
-
-  const COLORS = ['#94a3b8', '#3b82f6', '#22c55e'];
-  const pieData = analytics?.statusBreakdown ? [
-    { name: 'Pending', value: analytics.statusBreakdown.pending },
-    { name: 'Completed', value: analytics.statusBreakdown.completed }
-  ] : [];
 
   return (
     <div className="space-y-8 animate-in fade-in zoom-in duration-500 pb-10">
@@ -225,40 +227,44 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="dark:text-zinc-100">Weekly Activity (Completed Tasks)</CardTitle>
           </CardHeader>
-          <CardContent className="h-[300px]">
-            {analytics?.weeklyActivity ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.weeklyActivity} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#888888" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { weekday: 'short' })} 
-                  />
-                  <YAxis 
-                    stroke="#888888" 
-                    fontSize={12} 
-                    allowDecimals={false} 
-                    tickLine={false} 
-                    axisLine={false} 
-                  />
-                  <Tooltip 
-                    cursor={{fill: 'rgba(148, 163, 184, 0.1)'}} 
-                    contentStyle={{ 
-                      borderRadius: '8px', 
-                      border: 'none', 
-                      boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                      backgroundColor: 'hsl(var(--card))',
-                      color: 'hsl(var(--foreground))'
-                    }} 
-                  />
-                  <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                </BarChart>
-              </ResponsiveContainer>
+          <CardContent className="h-[300px] min-w-0">
+            {isMounted && analytics?.weeklyActivity ? (
+              <div className="h-full w-full min-w-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.weeklyActivity} margin={{ top: 20, right: 30, left: -20, bottom: 5 }}>
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#888888" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(val) => new Date(val).toLocaleDateString(undefined, { weekday: 'short' })} 
+                    />
+                    <YAxis 
+                      stroke="#888888" 
+                      fontSize={12} 
+                      allowDecimals={false} 
+                      tickLine={false} 
+                      axisLine={false} 
+                    />
+                    <Tooltip 
+                      cursor={{fill: 'rgba(148, 163, 184, 0.1)'}} 
+                      contentStyle={{ 
+                        borderRadius: '8px', 
+                        border: 'none', 
+                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                        backgroundColor: 'hsl(var(--card))',
+                        color: 'hsl(var(--foreground))'
+                      }} 
+                    />
+                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
-              <div className="h-full flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
+              <div className="h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
             )}
           </CardContent>
         </Card>
