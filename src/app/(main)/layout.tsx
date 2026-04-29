@@ -16,7 +16,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   if (status === "loading") {
     return (
-      <div className="flex bg-zinc-50 h-screen w-full items-center justify-center">
+      <div className="flex bg-zinc-50 dark:bg-zinc-950 h-screen w-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -34,12 +34,12 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 flex flex-col lg:flex-row">
-      <div className="lg:hidden flex items-center justify-between bg-white border-b border-zinc-200 p-4 sticky top-0 z-40">
+    <div className="min-h-screen bg-zinc-50/50 dark:bg-zinc-950 flex flex-col lg:flex-row">
+      <div className="lg:hidden flex items-center justify-between bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 p-4 sticky top-0 z-40">
         <span className="text-xl font-bold text-primary">TaskMaster</span>
         <div className="flex items-center gap-2">
           <NotificationsPopover />
-          <Button variant="outline" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <Button variant="outline" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="dark:bg-zinc-900 dark:border-zinc-800">
             <Menu className="h-5 w-5" />
           </Button>
         </div>
@@ -47,15 +47,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 transform bg-white border-r border-zinc-200 transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col",
+          "fixed inset-y-0 left-0 z-50 w-64 transform bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-auto flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="hidden lg:flex h-16 shrink-0 items-center justify-between px-6 border-b border-zinc-100">
+        <div className="hidden lg:flex h-16 shrink-0 items-center justify-between px-6 border-b border-zinc-100 dark:border-zinc-800">
           <span className="text-xl font-bold tracking-tight text-primary">TaskMaster</span>
           <NotificationsPopover align="left" />
         </div>
-        
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -67,14 +66,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 className={cn(
                   "group flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors",
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20"
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/50 hover:text-zinc-900 dark:hover:text-zinc-100"
                 )}
               >
                 <item.icon
                   className={cn(
                     "mr-3 h-5 w-5 flex-shrink-0",
-                    isActive ? "text-primary" : "text-zinc-400 group-hover:text-zinc-500"
+                    isActive ? "text-primary" : "text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 dark:group-hover:text-zinc-300"
                   )}
                   aria-hidden="true"
                 />
@@ -83,16 +82,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             );
           })}
         </nav>
-        
-        <div className="p-4 border-t border-zinc-100">
+        <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center justify-between">
             <div className="flex flex-col flex-1 min-w-0 pr-2">
-              <span className="text-sm font-medium text-zinc-900 truncate">{session?.user?.name}</span>
-              <span className="text-xs text-zinc-500 truncate">{session?.user?.email}</span>
+              <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">{session?.user?.name}</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate">{session?.user?.email}</span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <Button variant="ghost" size="icon" onClick={() => signOut()} title="Logout">
-                <LogOut className="h-5 w-5 text-zinc-500 hover:text-destructive" />
+                <LogOut className="h-5 w-5 text-zinc-500 dark:text-zinc-400 hover:text-destructive transition-colors" />
               </Button>
             </div>
           </div>

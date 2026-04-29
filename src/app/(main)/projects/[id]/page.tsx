@@ -104,12 +104,12 @@ export default function ProjectDetailPage({
     return (
       <div className="space-y-6 animate-pulse">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 bg-zinc-200 rounded-lg"></div>
-          <div className="h-8 bg-zinc-200 rounded w-1/4"></div>
+          <div className="h-10 w-10 bg-zinc-200 dark:bg-zinc-800 rounded-lg"></div>
+          <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded w-1/4"></div>
         </div>
         <div className="grid grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-[600px] bg-zinc-100 rounded-xl"></div>
+            <div key={i} className="h-[600px] bg-zinc-100 dark:bg-zinc-900/50 rounded-xl"></div>
           ))}
         </div>
       </div>
@@ -121,23 +121,23 @@ export default function ProjectDetailPage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Link href="/projects">
-            <Button variant="outline" size="icon" className="rounded-lg">
-              <ChevronLeft className="h-4 w-4" />
+            <Button variant="outline" size="icon" className="rounded-lg dark:border-zinc-800">
+              <ChevronLeft className="h-4 w-4 dark:text-zinc-400" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 group flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 group flex items-center gap-2">
               {project?.name}
               <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Settings className="h-3 w-3" />
+                <Settings className="h-3 w-3 dark:text-zinc-500" />
               </Button>
             </h1>
-            <p className="text-sm text-zinc-500">{project?.description}</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{project?.description}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleDeleteProject} className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-100">
+          <Button variant="outline" size="sm" onClick={handleDeleteProject} className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-100 dark:border-red-900/30">
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
@@ -147,39 +147,39 @@ export default function ProjectDetailPage({
               <Plus className="mr-2 h-4 w-4" />
               Add Task
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[450px] overflow-hidden p-0 rounded-2xl">
+            <DialogContent className="sm:max-w-[450px] overflow-hidden p-0 rounded-2xl dark:bg-zinc-900 dark:border-zinc-800">
               <form onSubmit={handleCreateTask}>
-                <div className="bg-zinc-50/50 p-6 pb-4 border-b border-zinc-100">
-                  <DialogTitle className="text-xl font-bold text-zinc-900">Create New Task</DialogTitle>
-                  <DialogDescription className="text-sm text-zinc-500 mt-1">
+                <div className="bg-zinc-50/50 dark:bg-zinc-950/30 p-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+                  <DialogTitle className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Create New Task</DialogTitle>
+                  <DialogDescription className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                     What do you need to get done?
                   </DialogDescription>
                 </div>
                 
                 <div className="p-6 space-y-5">
                   <div className="space-y-1.5">
-                    <Label htmlFor="task-title" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Title</Label>
+                    <Label htmlFor="task-title" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">Title</Label>
                     <Input 
                       id="task-title" 
                       value={newTask.title} 
                       onChange={(e) => setNewTask({...newTask, title: e.target.value})}
                       required 
                       placeholder="e.g. Redesign landing page"
-                      className="h-10 text-sm shadow-sm border-zinc-200 focus-visible:ring-primary/20"
+                      className="h-10 text-sm shadow-sm border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus-visible:ring-primary/20 dark:text-zinc-100"
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-1.5">
-                      <Label htmlFor="priority" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Priority</Label>
+                      <Label htmlFor="priority" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">Priority</Label>
                       <Select 
                         value={newTask.priority} 
                         onValueChange={(v: any) => setNewTask({...newTask, priority: v})}
                       >
-                        <SelectTrigger id="priority" className="h-10 text-sm shadow-sm border-zinc-200 capitalize bg-white">
+                        <SelectTrigger id="priority" className="h-10 text-sm shadow-sm border-zinc-200 dark:border-zinc-800 capitalize bg-white dark:bg-zinc-950 dark:text-zinc-100">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-zinc-900 dark:border-zinc-800">
                           <SelectItem value="low">Low</SelectItem>
                           <SelectItem value="medium">Medium</SelectItem>
                           <SelectItem value="high">High</SelectItem>
@@ -187,15 +187,15 @@ export default function ProjectDetailPage({
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="status" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Status</Label>
+                      <Label htmlFor="status" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">Status</Label>
                       <Select 
                         value={newTask.status} 
                         onValueChange={(v: any) => setNewTask({...newTask, status: v})}
                       >
-                        <SelectTrigger id="status" className="h-10 text-sm shadow-sm border-zinc-200 bg-white">
+                        <SelectTrigger id="status" className="h-10 text-sm shadow-sm border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 dark:text-zinc-100">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="dark:bg-zinc-900 dark:border-zinc-800">
                           <SelectItem value="todo">To Do</SelectItem>
                           <SelectItem value="in-progress">In Progress</SelectItem>
                           <SelectItem value="done">Done</SelectItem>
@@ -205,20 +205,20 @@ export default function ProjectDetailPage({
                   </div>
                   
                   <div className="space-y-1.5">
-                    <Label htmlFor="task-desc" className="text-xs font-semibold text-zinc-700 uppercase tracking-wide">Description <span className="text-zinc-400 font-normal lowercase">(optional)</span></Label>
+                    <Label htmlFor="task-desc" className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">Description <span className="text-zinc-400 dark:text-zinc-500 font-normal lowercase">(optional)</span></Label>
                     <Textarea 
                       id="task-desc" 
                       value={newTask.description}
                       onChange={(e) => setNewTask({...newTask, description: e.target.value})}
                       rows={3}
                       placeholder="Add any extra details here..."
-                      className="resize-none shadow-sm border-zinc-200 focus-visible:ring-primary/20 text-sm"
+                      className="resize-none shadow-sm border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 focus-visible:ring-primary/20 text-sm dark:text-zinc-100"
                     />
                   </div>
                 </div>
                 
-                <div className="p-6 pt-0 flex justify-end gap-2 bg-white">
-                  <Button type="button" variant="ghost" onClick={() => setIsTaskModalOpen(false)} className="text-zinc-500 hover:text-zinc-900">Cancel</Button>
+                <div className="p-6 pt-0 flex justify-end gap-2 bg-white dark:bg-zinc-900">
+                  <Button type="button" variant="ghost" onClick={() => setIsTaskModalOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">Cancel</Button>
                   <Button type="submit" disabled={creatingTask} className="shadow-sm font-semibold px-6">
                     {creatingTask ? "Adding..." : "Create Task"}
                   </Button>

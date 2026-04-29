@@ -8,11 +8,12 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { TaskDetailModal } from "./task-detail-modal";
+import { cn } from "@/lib/utils";
 
 const columns = [
-  { id: "todo", title: "To Do", color: "bg-zinc-100" },
-  { id: "in-progress", title: "In Progress", color: "bg-blue-50" },
-  { id: "done", title: "Done", color: "bg-green-50" },
+  { id: "todo", title: "To Do", color: "bg-zinc-100 dark:bg-zinc-900/50" },
+  { id: "in-progress", title: "In Progress", color: "bg-blue-50 dark:bg-blue-950/20" },
+  { id: "done", title: "Done", color: "bg-green-50 dark:bg-green-950/20" },
 ];
 
 export function KanbanBoard({ initialTaskId }: { initialTaskId?: string | null }) {
@@ -83,15 +84,15 @@ export function KanbanBoard({ initialTaskId }: { initialTaskId?: string | null }
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-start">
         {columns.map((column) => (
-          <div key={column.id} className="flex flex-col h-full bg-zinc-50/50 rounded-xl border border-zinc-200/50 p-4">
+          <div key={column.id} className="flex flex-col h-full bg-zinc-50/50 dark:bg-zinc-950/20 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 p-4">
             <div className="flex items-center justify-between mb-4 px-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-zinc-900">{column.title}</h3>
-                <span className="flex items-center justify-center bg-white border border-zinc-200 text-[10px] font-bold text-zinc-500 rounded-full h-5 w-5">
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{column.title}</h3>
+                <span className="flex items-center justify-center bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 rounded-full h-5 w-5">
                   {tasks.filter((t) => t.status === column.id).length}
                 </span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 dark:text-zinc-500">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
@@ -101,9 +102,10 @@ export function KanbanBoard({ initialTaskId }: { initialTaskId?: string | null }
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className={`flex-1 min-h-[500px] transition-colors rounded-lg ${
-                    snapshot.isDraggingOver ? "bg-zinc-100/50" : ""
-                  }`}
+                  className={cn(
+                    "flex-1 min-h-[500px] transition-colors rounded-lg",
+                    snapshot.isDraggingOver && "bg-zinc-100/50 dark:bg-zinc-800/20"
+                  )}
                 >
                   {tasks
                     .filter((task) => task.status === column.id)

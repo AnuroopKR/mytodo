@@ -22,9 +22,9 @@ interface TaskCardProps {
 }
 
 const priorityColors = {
-  low: "bg-blue-50 text-blue-600 border-blue-100",
-  medium: "bg-orange-50 text-orange-600 border-orange-100",
-  high: "bg-red-50 text-red-600 border-red-100",
+  low: "bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/50",
+  medium: "bg-orange-50 text-orange-600 border-orange-100 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900/50",
+  high: "bg-red-50 text-red-600 border-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50",
 };
 
 const priorityDotColors = {
@@ -69,9 +69,9 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
           )}
         >
           <Card className={cn(
-            "relative overflow-hidden bg-white/70 backdrop-blur-sm transition-all duration-300 shadow-sm border-zinc-200/50 hover:shadow-md hover:border-zinc-300",
+            "relative overflow-hidden bg-white/70 dark:bg-zinc-900/80 backdrop-blur-sm transition-all duration-300 shadow-sm border-zinc-200/50 dark:border-zinc-800 hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700",
             snapshot.isDragging && "scale-[1.02] shadow-xl rotate-1 z-50 border-primary/30 ring-1 ring-primary/20",
-            isDueSoon && "border-red-200/80 bg-red-50/10"
+            isDueSoon && "border-red-200/80 dark:border-red-900/50 bg-red-50/10 dark:bg-red-950/5"
           )}>
             {/* Left accent line for priority */}
             <div className={cn("absolute left-0 top-0 bottom-0 w-[3px]", priorityDotColors[task.priority])} />
@@ -85,25 +85,25 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
                   {task.priority}
                 </Badge>
                 {task.tags?.slice(0, 2).map((tag, i) => (
-                  <Badge key={i} variant="secondary" className="text-[9px] h-4.5 px-1.5 bg-zinc-100/80 text-zinc-600 hover:bg-zinc-200 font-medium border-0 shadow-none">
+                  <Badge key={i} variant="secondary" className="text-[9px] h-4.5 px-1.5 bg-zinc-100/80 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-medium border-0 shadow-none">
                     {tag}
                   </Badge>
                 ))}
                 {task.tags && task.tags.length > 2 && (
-                  <span className="text-[10px] text-zinc-400 font-medium">+{task.tags.length - 2}</span>
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">+{task.tags.length - 2}</span>
                 )}
               </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-100 hover:text-zinc-600 -mr-1">
+              <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-300 dark:text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-300 -mr-1">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </CardHeader>
 
             <CardContent className="p-3.5 pt-0 pl-4">
-              <h4 className="text-[13px] leading-snug font-semibold text-zinc-800 line-clamp-2 mb-1.5">
+              <h4 className="text-[13px] leading-snug font-semibold text-zinc-800 dark:text-zinc-200 line-clamp-2 mb-1.5">
                 {task.title}
               </h4>
               {task.description && (
-                <p className="text-[11px] text-zinc-500 line-clamp-2 mb-3 leading-relaxed">
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3 leading-relaxed">
                   {task.description}
                 </p>
               )}
@@ -111,28 +111,30 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
               {/* Progress Bar for Subtasks */}
               {totalSubtasks > 0 && (
                 <div className="mb-3 space-y-1">
-                  <div className="flex items-center justify-between text-[10px] text-zinc-500 font-medium">
+                  <div className="flex items-center justify-between text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">
                     <span className="flex items-center gap-1">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                       {completedSubtasks}/{totalSubtasks}
                     </span>
                     <span>{progressPercentage}%</span>
                   </div>
-                  <div className="h-1 w-full bg-zinc-100 rounded-full overflow-hidden">
+                  <div className="h-1 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-zinc-400 transition-all duration-300 ease-out" 
+                      className="h-full bg-zinc-400 dark:bg-zinc-500 transition-all duration-300 ease-out" 
                       style={{ width: `${progressPercentage}%` }}
                     />
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100">
+              <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
                   {task.dueDate && (
                     <div className={cn(
                       "flex items-center text-[10px] font-medium px-2 py-0.5 rounded-md",
-                      isDueSoon ? "bg-red-50 text-red-600 border border-red-100" : "bg-zinc-50 text-zinc-500 border border-zinc-200"
+                      isDueSoon 
+                        ? "bg-red-50 text-red-600 border border-red-100 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900/50" 
+                        : "bg-zinc-50 text-zinc-500 border border-zinc-200 dark:bg-zinc-900/50 dark:text-zinc-400 dark:border-zinc-800"
                     )}>
                       <Calendar className="mr-1.5 h-3 w-3 opacity-70" />
                       {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -142,7 +144,7 @@ export function TaskCard({ task, index, onClick }: TaskCardProps) {
                 </div>
                 
                 {/* Fake Avatar */}
-                <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-primary/80 to-primary flex items-center justify-center text-[9px] font-bold text-white shadow-sm ring-2 ring-white">
+                <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-primary/80 to-primary flex items-center justify-center text-[9px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-zinc-900">
                   {task.title.substring(0, 1).toUpperCase()}
                 </div>
               </div>
